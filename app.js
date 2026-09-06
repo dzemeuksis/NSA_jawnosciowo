@@ -107,7 +107,7 @@ function setMode(nextMode) {
   els.hint.textContent = exact
     ? 'Wyniki zawierają dokładnie wpisany ciąg znaków; wielkość liter jest ignorowana.'
     : 'Wyniki są sortowane według podobieństwa znaczeniowego do wpisanego pytania lub opisu.';
-  els.input.placeholder = exact ? 'Np. informacja przetworzona' : 'Np. kiedy organ powinien doprecyzować wniosek?';
+  els.input.placeholder = exact ? 'Np. przetworzo' : 'Np. rażąca bezczynność';
   runSearch();
   els.input.focus();
 }
