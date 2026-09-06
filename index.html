@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Wyszukiwarka tez jawnościowych w orzeczeniach NSA">
+  <meta name="theme-color" content="#9b1c35">
+  <title>Tezy jawnościowe NSA</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="top-strip" aria-hidden="true"></div>
+    <div class="container header-inner">
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <div class="hero-topline">
+            <p class="eyebrow">BAZA TEZ JAWNOŚCIOWYCH</p>
+            <button id="about-button" class="about-button" type="button" aria-haspopup="dialog" aria-controls="about-dialog">
+              <span class="about-icon" aria-hidden="true">i</span>
+              <span>O SERWISIE</span>
+            </button>
+          </div>
+          <h1>Jawność w orzeczeniach <span>NSA</span></h1>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="search-section" aria-label="Wyszukiwanie">
+      <div class="container">
+        <div class="section-label">SZUKAJ W TEZACH</div>
+        <div class="search-panel">
+          <div class="mode-switch" role="tablist" aria-label="Tryb wyszukiwania">
+            <button id="mode-exact" class="mode-button active" type="button" role="tab" aria-selected="true">
+              <span class="mode-index">01</span>
+              <span>Dokładna fraza</span>
+            </button>
+            <button id="mode-semantic" class="mode-button" type="button" role="tab" aria-selected="false">
+              <span class="mode-index">02</span>
+              <span>Znaczeniowe</span>
+            </button>
+          </div>
+
+          <div class="search-row">
+            <label class="sr-only" for="search-input">Szukana fraza</label>
+            <input id="search-input" type="search" autocomplete="off" placeholder="Np. informacja przetworzona" autofocus>
+            <button id="search-button" type="button">SZUKAJ <span aria-hidden="true">→</span></button>
+          </div>
+
+          <div class="filters-row">
+            <div class="filter-group">
+              <label for="type-filter">TYP TEZY</label>
+              <select id="type-filter">
+                <option value="">Wszystkie typy</option>
+              </select>
+            </div>
+            <span id="mode-hint" class="mode-hint">Wyniki zawierają dokładnie wpisany ciąg znaków; wielkość liter jest ignorowana.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="results-section">
+      <div class="container">
+        <section class="results-summary" aria-live="polite">
+          <div class="results-heading">
+            <span class="results-heading-label">WYNIKI</span>
+            <div id="result-count">Ładowanie danych…</div>
+          </div>
+          <div id="semantic-status" class="semantic-status" hidden><span class="status-dot"></span> Model znaczeniowy gotowy</div>
+        </section>
+
+        <section id="results" class="results" aria-label="Wyniki wyszukiwania"></section>
+        <div id="load-more-wrap" class="load-more-wrap" hidden>
+  <button id="load-more-button" type="button" class="load-more-button">
+    POKAŻ KOLEJNE 25
+  </button>
+</div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <strong>TEZY JAWNOŚCIOWE NSA</strong>
+      <span>Data ostatniej aktualizacji: 2026-09-06</span>
+    </div>
+  </footer>
+
+  <dialog id="about-dialog" class="about-dialog" aria-labelledby="about-title">
+    <div class="about-dialog-inner">
+      <div class="about-dialog-header">
+        <div>
+          <div class="about-kicker">O SERWISIE</div>
+          <h2 id="about-title">Skąd pochodzą tezy i jak działa wyszukiwarka?</h2>
+        </div>
+        <button id="about-close" class="about-close" type="button" aria-label="Zamknij informacje o serwisie">×</button>
+      </div>
+
+      <div class="about-content">
+        <section class="about-section">
+          <h3>Źródło orzeczeń</h3>
+          <p>
+            Serwis opiera się na orzeczeniach <strong>Naczelnego Sądu Administracyjnego</strong>
+            opublikowanych lub zmienionych w <strong>Centralnej Bazie Orzeczeń Sądów Administracyjnych (CBOSA)</strong> mniej więcej w sierpniu roku 2025 lub później i dotyczących spraw z zakresu dostępu do informacji publicznej (symbol sprawy 648), bez gwarancji kompletności.
+            Przy każdej tezie znajduje się link prowadzący do źródłowego orzeczenia.
+          </p>
+          <p>
+            <a class="about-source-link" href="https://orzeczenia.nsa.gov.pl/cbo/query" target="_blank" rel="noopener noreferrer">
+              Otwórz CBOSA <span aria-hidden="true">↗</span>
+            </a>
+          </p>
+        </section>
+
+        <section class="about-section">
+          <h3>Jak powstają tezy?</h3>
+          <p>
+            Tezy są automatycznie wyszukiwane i syntetyzowane z uzasadnień orzeczeń przy użyciu
+            modelu językowego <strong>GPT-5.6 Luna</strong>. Analiza ma wychwytywać wypowiedzi NSA
+            o znaczeniu jawnościowym — w szczególności takie, które wspierają dostęp do informacji,
+            wyjaśniają zakres jawności, zawężają wyjątki od niej albo wskazują praktyczną drogę
+            uzyskania informacji.
+          </p>
+          <p>
+            Model jest instruowany, aby nie przypisywać NSA poglądów jedynie przytoczonych z wyroku
+            WSA, stanowiska organu albo argumentacji stron, jeżeli NSA nie przyjmuje ich jako własnego
+            stanowiska.
+          </p>
+        </section>
+
+        <section class="about-section">
+          <h3>Jak działa wyszukiwanie?</h3>
+          <div class="about-search-grid">
+            <div class="about-search-card">
+              <strong>Dokładna fraza</strong>
+              <p>
+                Szuka wpisanego ciągu znaków w treści tez, ich znaczeniu jawnościowym i podstawie
+                w uzasadnieniu. Wielkość liter jest ignorowana.
+              </p>
+            </div>
+            <div class="about-search-card">
+              <strong>Znaczeniowe</strong>
+              <p>
+                Korzysta z polskiego modelu embeddingowego <strong>mmlw-retrieval-e5-small</strong>.
+                Tezy i zapytanie użytkownika są zamieniane na wektory, a wyniki są porządkowane
+                według podobieństwa znaczeniowego. Embedding zapytania jest liczony lokalnie
+                w przeglądarce; przy pierwszym użyciu trzeba jednorazowo pobrać model.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="about-section about-warning">
+          <h3>Ważne</h3>
+          <p>
+            Tezy są wynikiem automatycznej analizy i syntezy, a nie oficjalnymi tezami sądu ani
+            opracowaniem autoryzowanym przez NSA. Model może popełnić błąd lub pominąć istotny
+            kontekst. Przed wykorzystaniem tezy w pracy prawnej lub badawczej należy sprawdzić
+            pełne uzasadnienie źródłowego orzeczenia.
+          </p>
+        </section>
+      </div>
+    </div>
+  </dialog>
+
+  <div id="semantic-overlay" class="overlay" hidden aria-hidden="true">
+    <div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="overlay-title">
+      <div class="overlay-kicker">WYSZUKIWANIE ZNACZENIOWE</div>
+      <div class="spinner" aria-hidden="true"></div>
+      <h2 id="overlay-title">Przygotowuję wyszukiwanie znaczeniowe</h2>
+      <p id="overlay-message">Przy pierwszym użyciu przeglądarka musi pobrać model językowy. To może potrwać chwilę zależnie od łącza.</p>
+      <div class="progress-track" aria-hidden="true"><div id="overlay-progress" class="progress-bar"></div></div>
+      <p id="overlay-detail" class="overlay-detail">Nie zamykaj tej karty. Interfejs jest teraz zablokowany i odblokuje się automatycznie po zakończeniu.</p>
+      <button id="overlay-close" class="secondary-button" type="button" hidden>WRÓĆ DO WYSZUKIWANIA DOKŁADNEGO</button>
+    </div>
+  </div>
+
+  <noscript>Ta strona wymaga włączonego JavaScriptu.</noscript>
+  <script>
+    (() => {
+      const button = document.querySelector('#about-button');
+      const dialog = document.querySelector('#about-dialog');
+      const close = document.querySelector('#about-close');
+
+      if (!button || !dialog || !close) return;
+
+      button.addEventListener('click', () => {
+        if (typeof dialog.showModal === 'function') dialog.showModal();
+      });
+
+      close.addEventListener('click', () => dialog.close());
+
+      dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) dialog.close();
+      });
+    })();
+  </script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
