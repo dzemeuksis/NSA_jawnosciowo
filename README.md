@@ -103,7 +103,7 @@ pip install pymongo python-dotenv sentence-transformers
 Następnie:
 
 ```bash
-python prepare_site_data.py
+python tools/prepare_site_data.py
 ```
 
 Zmienne `MONGO_URI`, `MONGO_DB`, `MONGO_COLLECTION` mogą być w `.env`.
