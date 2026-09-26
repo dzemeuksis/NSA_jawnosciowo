@@ -33,7 +33,7 @@ MONGO_COLLECTION = os.getenv("MONGO_COLLECTION", "wyroki")
 PYTHON_MODEL = "sdadas/mmlw-retrieval-e5-small"
 BROWSER_MODEL = "Infojura/mmlw-retrieval-e5-small-onnx"
 
-OUTPUT_DIR = Path(__file__).resolve().parent / "data"
+OUTPUT_DIR = Path(__file__).resolve().parent.parent / "data"
 BATCH_SIZE = 64
 
 
