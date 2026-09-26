@@ -16,9 +16,8 @@ publikatorem orzeczeń.
 
 ### Jak powstają tezy
 
-Treść uzasadnień NSA jest analizowana automatycznie przy użyciu modelu
-językowego **GPT-5.6 Luna**. Model wyszukuje i syntetyzuje wypowiedzi NSA
-o znaczeniu jawnościowym, m.in. takie, które:
+Treść uzasadnień NSA jest analizowana automatycznie przy przy użyciu modeli językowych OpenAI w wariancie **Luna**,
+z rozumowaniem ustawionym na poziom średni. Model wyszukuje i syntetyzuje wypowiedzi NSA o znaczeniu jawnościowym, m.in. takie, które:
 
 - wspierają dostęp do informacji publicznej,
 - wyjaśniają zakres jawności,
