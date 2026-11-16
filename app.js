@@ -355,7 +355,10 @@ function renderResults(items, options = {}) {
     const score = scores.get(record.id);
     return `<article class="result-card">
       <div class="result-topline">
-        <span class="type-chip">${escapeHtml(prettyType(record.typ))}</span>
+        <div class="result-identifiers">
+          <span class="type-chip">${escapeHtml(prettyType(record.typ))}</span>
+          ${record.sygnatura ? `<span class="case-signature">${escapeHtml(record.sygnatura)}</span>` : ''}
+        </div>
         ${Number.isFinite(score) ? `<span class="similarity">podobieństwo: ${Math.round(score * 100)}%</span>` : ''}
       </div>
       <h2>${highlightText(record.teza, highlight)}</h2>

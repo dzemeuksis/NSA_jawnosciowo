@@ -285,6 +285,19 @@ select {
   gap: 12px;
   margin-bottom: 10px;
 }
+.result-identifiers {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.case-signature {
+  color: var(--ink);
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .015em;
+  white-space: nowrap;
+}
 .type-chip {
   display: inline-block;
   background: var(--ink);

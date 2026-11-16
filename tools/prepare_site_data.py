@@ -48,6 +48,7 @@ def main():
     projection = {
         "_id": 1,
         "tezy_projawnosciowe": 1,
+        "metadata.sygnatura": 1,
         "link": 1,
         "url": 1,
         "link_do_wyroku": 1,
@@ -58,6 +59,9 @@ def main():
     records = []
     for doc in coll.find(query, projection=projection):
         link = get_link(doc)
+        metadata = doc.get("metadata")
+        sygnatura = metadata.get("sygnatura", "") if isinstance(metadata, dict) else ""
+        sygnatura = sygnatura.strip() if isinstance(sygnatura, str) else ""
         for teza in doc.get("tezy_projawnosciowe", []):
             if not isinstance(teza, dict):
                 continue
@@ -68,6 +72,7 @@ def main():
                 "typ": str(teza.get("typ", "")).strip(),
                 "podstawa_w_uzasadnieniu": str(teza.get("podstawa_w_uzasadnieniu", "")).strip(),
                 "link": link,
+                "sygnatura": sygnatura,
             })
 
     compact = json.dumps(records, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
