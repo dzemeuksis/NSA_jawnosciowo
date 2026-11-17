@@ -1,0 +1,57 @@
+{
+  "format": 1,
+  "bytes": 7634908,
+  "sha256": "94ee0088971965a5514e20f877457eb44daeafa35fd898417aefb69da875a5ec",
+  "tries": [
+    {
+      "rows": 26307,
+      "cells": 461054,
+      "commands": 1010
+    },
+    {
+      "rows": 8336,
+      "cells": 139245,
+      "commands": 140
+    },
+    {
+      "rows": 687,
+      "cells": 11194,
+      "commands": 259
+    },
+    {
+      "rows": 761,
+      "cells": 10056,
+      "commands": 61
+    },
+    {
+      "rows": 59,
+      "cells": 609,
+      "commands": 55
+    },
+    {
+      "rows": 61,
+      "cells": 546,
+      "commands": 21
+    },
+    {
+      "rows": 4,
+      "cells": 28,
+      "commands": 14
+    },
+    {
+      "rows": 4,
+      "cells": 28,
+      "commands": 9
+    },
+    {
+      "rows": 1,
+      "cells": 4,
+      "commands": 7
+    },
+    {
+      "rows": 1,
+      "cells": 4,
+      "commands": 1
+    }
+  ]
+}

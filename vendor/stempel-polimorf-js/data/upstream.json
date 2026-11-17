@@ -1,0 +1,13 @@
+{
+  "package": "PyStempel",
+  "version": "2.0.0",
+  "repository": "https://github.com/dzieciou/pystempel",
+  "revision": "30653e453c11528206d2da492dd1d51aa76df768",
+  "sha256": {
+    "stemmer.py": "9367a3cc3d731eb0ea1210859afcbedd09650632ff524aa8559f405f8b497a0a",
+    "egothor.py": "15ef03b4c2937fce1612b7ceccb26c735354489e406cb0f16feafb57c964ce9c",
+    "streams.py": "222a15a058273302b02905776794a988ece7f164e1f9183e1ca111bf2c0aa8f8",
+    "data/polimorf/stemmer_polimorf.tbl.gz": "67a4f1c0bffb42fe4663680d8c4ca2863bb7ab123ea1fc017af80491de138908"
+  },
+  "tableUncompressedSha256": "a371670c4235503cad3750374c0c0dd2caaf892ecbf5d76bce0180dad0482a17"
+}

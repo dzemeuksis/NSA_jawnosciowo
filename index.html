@@ -56,6 +56,7 @@
                 <option value="">Wszystkie typy</option>
               </select>
             </div>
+            <label id="hybrid-controls" hidden><input id="hybrid-toggle" type="checkbox" checked> Łącz dopasowanie znaczeniowe i słowne</label>
             <span id="mode-hint" class="mode-hint">Wyniki zawierają dokładnie wpisany ciąg znaków; wielkość liter jest ignorowana.</span>
           </div>
         </div>
@@ -87,6 +88,7 @@
       <strong>TEZY JAWNOŚCIOWE NSA</strong>
       <span>Data ostatniej aktualizacji: 2026-09-26</span>
     </div>
+    <p class="container"><small>Polski stemming: <a href="vendor/stempel-polimorf-js/NOTICE">Stempel/PoliMorf — autorzy i licencje</a></small></p>
   </footer>
 
   <dialog id="about-dialog" class="about-dialog" aria-labelledby="about-title">
@@ -144,7 +146,7 @@
               <p>
                 Korzysta z polskiego modelu embeddingowego <strong>mmlw-retrieval-e5-small</strong>.
                 Tezy i zapytanie użytkownika są zamieniane na wektory, a wyniki są porządkowane
-                według podobieństwa znaczeniowego. Embedding zapytania jest liczony lokalnie
+                przez połączenie rankingu znaczeniowego i dopasowania słów (BM25). Możesz wyłączyć dopasowanie słowne, aby wrócić do samego MMLW. Embedding zapytania jest liczony lokalnie
                 w przeglądarce; przy pierwszym użyciu trzeba jednorazowo pobrać model.
               </p>
             </div>

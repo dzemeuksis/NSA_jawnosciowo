@@ -1,0 +1,1 @@
+{"private":true,"type":"module","scripts":{"test":"python tools/test_search.py","test:browser":"node --test tests/browser.test.js"},"devDependencies":{"playwright":"1.58.2"}}

@@ -2,7 +2,7 @@
 Generuje dane i embeddingi dla statycznej wyszukiwarki GitHub Pages bezpośrednio z MongoDB.
 
 Instalacja:
-    pip install pymongo python-dotenv sentence-transformers
+    pip install pymongo python-dotenv sentence-transformers -r tools/requirements-search.txt
 
 Uruchomienie:
     python prepare_site_data.py
@@ -10,6 +10,8 @@ Uruchomienie:
 Wyniki:
     data/data.json
     data/embeddings.json
+    data/bm25.json
+    data/bm25-unicode.json
 
 Embedding powstaje z: "passage: " + teza + znaczenie_projawnosciowe.
 """
@@ -17,6 +19,8 @@ import hashlib
 import json
 import os
 from pathlib import Path
+
+from build_bm25 import build_index, write_json, write_unicode
 
 from dotenv import load_dotenv
 from pymongo import MongoClient
@@ -83,6 +87,9 @@ def main():
         json.dumps(data_payload, ensure_ascii=False, separators=(",", ":")),
         encoding="utf-8",
     )
+
+    write_json(OUTPUT_DIR / "bm25.json", build_index(data_payload))
+    write_unicode(OUTPUT_DIR / "bm25-unicode.json")
 
     texts = [f"passage: {r['teza']}\n{r['znaczenie_projawnosciowe']}".strip() for r in records]
     print(f"Tez do embeddingu: {len(texts)}")
