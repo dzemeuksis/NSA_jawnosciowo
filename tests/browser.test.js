@@ -16,15 +16,21 @@ before(async () => {
   browser = await chromium.launch({ headless: true });
 });
 after(async () => { await browser?.close(); server?.kill(); });
-async function pageFor(path = '/') {
+async function pageFor(path = '/', fixture = null) {
   const page = await browser.newPage();
   // Keep model execution deterministic and offline; test the real browser integration,
   // lexical assets and UI. The unchanged 113 MB ONNX model is not downloaded in CI.
+  const queryVector = fixture?.queryVector ?? vector;
   await page.route('https://cdn.jsdelivr.net/**', route => route.fulfill({ contentType: 'text/javascript', body:
     `export async function pipeline(task, model, options) {
       if (model !== 'Infojura/mmlw-retrieval-e5-small-onnx') throw Error('model changed');
-      return async text => { if (!text.startsWith('query: ')) throw Error('prefix changed'); return {data: ${JSON.stringify(vector)}}; };
+      return async text => { if (!text.startsWith('query: ')) throw Error('prefix changed'); return {data: ${JSON.stringify(queryVector)}}; };
     }` }));
+  if (fixture) {
+    for (const [name, payload] of [['data', fixture.data], ['embeddings', fixture.embeddings], ['bm25', fixture.index]]) {
+      await page.route(`**/data/${name}.json`, route => route.fulfill({ json: payload }));
+    }
+  }
   await page.goto(origin + path);
   await page.waitForFunction(() => document.querySelector('#result-count').textContent.includes('tez w bazie'));
   return page;
@@ -32,13 +38,14 @@ async function pageFor(path = '/') {
 async function search(page) {
   await page.locator('#search-input').fill('dostęp do informacji publicznej');
   await page.locator('#mode-semantic').click();
-  await page.waitForFunction(() => document.querySelector('.similarity') && !document.querySelector('#search-button').disabled);
+  await page.waitForFunction(() => document.querySelector('#result-count').textContent.includes(' z ') && !document.querySelector('#search-button').disabled);
 }
 test('hybrid, pagination, toggle, type filter, exact phrase and browser loader', async () => {
   const page = await pageFor();
   try {
     await search(page);
-    assert.match(await page.locator('.similarity').first().textContent(), /RRF:/);
+    assert.equal(await page.locator('.similarity').count(), 0);
+    assert.doesNotMatch(await page.locator('#results').textContent(), /RRF:/);
     const count = await page.locator('#result-count').textContent();
     assert.match(count, /^25 z (1\d\d|200) wyników$/);
     await page.getByRole('button', { name: 'POKAŻ KOLEJNE 25', exact: true }).click();
@@ -114,5 +121,45 @@ test('global feature flag skips lexical loading and hides toggle', async () => {
     assert.equal(lexicalRequests, 0);
     assert.equal(await page.locator('#hybrid-controls').isVisible(), false);
     assert.match(await page.locator('.similarity').first().textContent(), /podobieństwo:/);
+  } finally { await page.close(); }
+});
+
+test('type filter admits records below both global top-100 cutoffs and rebases RRF', async () => {
+  const fixture = JSON.parse(readFileSync('tests/fixtures/type-filter.json'));
+  const page = await pageFor('/', fixture);
+  try {
+    await page.locator('#search-input').fill(fixture.query);
+    await page.locator('#mode-semantic').click();
+    await page.waitForFunction(() => document.querySelector('#result-count').textContent === '25 z 100 wyników');
+    assert.equal(await page.locator('.similarity').count(), 0);
+    // Python oracle proves the rare records have positive BM25 scores but are
+    // outside BOTH global pools. The UI must filter before truncation and fusion.
+    const rareIndices = fixture.expected.map(h => h.record_index);
+    for (const global of [fixture.dense, fixture.lexical]) {
+      assert.ok(rareIndices.every(i => global.findIndex(h => h.record_index === i) >= 100));
+    }
+    const expectedSignatures = fixture.expected.map(h => fixture.data.records[h.record_index].sygnatura);
+    await page.locator('#type-filter').selectOption('rzadki');
+    await page.waitForFunction(() => document.querySelector('#result-count').textContent === '5 z 5 wyników');
+    assert.deepEqual(await page.locator('.case-signature').allTextContents(), expectedSignatures);
+    assert.equal(await page.locator('.similarity').count(), 0);
+    assert.doesNotMatch(await page.locator('#results').textContent(), /RRF:/);
+    const actual = await page.evaluate(async ({ query, dense, records }) => {
+      const module = await import('/hybrid-search.js');
+      const data = await (await fetch('/data/data.json')).json();
+      const hybrid = await module.loadHybrid(data);
+      const rare = hits => hits.filter(h => records[h.record_index].typ === 'rzadki');
+      return hybrid.fuse(rare(dense), rare(hybrid.rank(query)));
+    }, { query: fixture.query, dense: fixture.dense, records: fixture.data.records });
+    assert.deepEqual(actual, fixture.expected);
+    await page.locator('#hybrid-toggle').uncheck();
+    await page.waitForFunction(() => document.querySelector('.similarity')?.textContent.includes('podobieństwo'));
+    assert.deepEqual(await page.locator('.case-signature').allTextContents(), expectedSignatures);
+    assert.equal(await page.locator('.similarity').count(), 5);
+    await page.locator('#hybrid-toggle').check();
+    await page.waitForFunction(() => !document.querySelector('#search-button').disabled && !document.querySelector('.similarity'));
+    assert.deepEqual(await page.locator('.case-signature').allTextContents(), expectedSignatures);
+    await page.locator('#type-filter').selectOption('');
+    await page.waitForFunction(() => document.querySelector('#result-count').textContent === '25 z 100 wyników');
   } finally { await page.close(); }
 });

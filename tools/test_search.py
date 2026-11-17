@@ -59,6 +59,10 @@ def main():
                             ([dict(record_index=i) for i in range(250)], [])]:
         subprocess.run(['node', 'tests/rrf.mjs'], text=True, check=True, cwd=ROOT,
                        input=json.dumps(dict(dense=dense, lexical=lexical, expected=fuse(dense, lexical))))
+    from type_filter_fixture import make_fixture
+    fixture = make_fixture(tokenize)
+    assert fixture == json.loads((ROOT / 'tests/fixtures/type-filter.json').read_text()), 'Stale type-filter regression fixture'
+    print('PASS: Python type-filter oracle includes all five rare-type records beyond both global top-100 cutoffs')
     print(f'PASS: {len(cases)} Python/JS score, tokenizer, BM25 and RRF comparisons; production index rebuilt identically')
 
 

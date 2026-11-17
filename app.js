@@ -186,6 +186,7 @@ async function runSemanticSearch() {
     const queryVector = Array.from(out.data);
     const scored = [];
     for (let i = 0; i < records.length; i++) {
+      if (type && records[i].typ !== type) continue;
       scored.push({ record_index: i, record: records[i], score: dot(queryVector, embeddings[i]) });
     }
     scored.sort((a,b) => b.score - a.score || a.record_index - b.record_index);
@@ -195,7 +196,10 @@ async function runSemanticSearch() {
     resultKind = 'cosine';
     if (hybrid && els.hybrid.checked) {
       try {
-        ranked = hybrid.fuse(scored, hybrid.rank(query)).map(hit => ({ ...hit, record: records[hit.record_index] }));
+        // Restrict both complete rankings before RRF selects either top-100 pool.
+        // BM25 scores retain the corpus-wide IDF and average document length.
+        const lexical = hybrid.rank(query).filter(hit => !type || records[hit.record_index].typ === type);
+        ranked = hybrid.fuse(scored, lexical).map(hit => ({ ...hit, record: records[hit.record_index] }));
         resultKind = 'rrf';
       } catch (error) {
         hybridFailed = true;
@@ -203,7 +207,7 @@ async function runSemanticSearch() {
         console.warn('Błąd BM25; używam MMLW:', error);
       }
     }
-    semanticResults = type ? ranked.filter(hit => hit.record.typ === type) : ranked;
+    semanticResults = ranked;
     els.hint.textContent = resultKind === 'rrf'
       ? 'Ranking łączy dopasowanie znaczeniowe i słowne. Pokazujemy wyniki z puli kandydatów obu metod.'
       : 'Wyniki są sortowane według podobieństwa znaczeniowego do wpisanego pytania lub opisu.';
@@ -407,7 +411,7 @@ function renderResults(items, options = {}) {
           <span class="type-chip">${escapeHtml(prettyType(record.typ))}</span>
           ${record.sygnatura ? `<span class="case-signature">${escapeHtml(record.sygnatura)}</span>` : ''}
         </div>
-        ${Number.isFinite(score) ? `<span class="similarity">${options.scoreKind === 'rrf' ? `RRF: ${score.toFixed(4)}` : `podobieństwo: ${Math.round(score * 100)}%`}</span>` : ''}
+        ${Number.isFinite(score) && options.scoreKind !== 'rrf' ? `<span class="similarity">podobieństwo: ${Math.round(score * 100)}%</span>` : ''}
       </div>
       <h2>${highlightText(record.teza, highlight)}</h2>
       <div class="field"><span class="field-label">Znaczenie projawnościowe</span><p>${highlightText(record.znaczenie_projawnosciowe, highlight)}</p></div>

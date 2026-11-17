@@ -157,9 +157,13 @@ Powtórzone słowa w zapytaniu liczą się wielokrotnie. Wynik RRF to suma
 `1 / (60 + pozycja)` z pozycjami liczonymi od 1. Remisy w BM25, MMLW i RRF
 rozstrzyga indeks rekordu w `data.records`, zgodnie z eksperymentem
 `porownaj_modele.py`; identyfikator rekordu nie jest kluczem rozstrzygania remisów.
-W hybrydzie paginacja obejmuje sumę obu pul (maksymalnie 200 rekordów), a filtr
-typu działa **po** globalnym RRF. W trybie samego MMLW dostępny jest cały ranking.
-Wartości RRF są oznaczone jako RRF, bez przeliczania ich na procent podobieństwa.
+W hybrydzie paginacja obejmuje sumę obu pul (maksymalnie 200 rekordów).
+Filtr typu ogranicza **oba pełne rankingi przed wyborem** po 100 kandydatów do RRF.
+Pozycje RRF są liczone od 1 w obrębie wybranego typu, więc rekord spoza globalnej
+pierwszej setki może zostać uwzględniony. BM25 zachowuje statystyki całego korpusu
+(IDF i średnią długość dokumentu) oraz dotychczasowe parametry.
+W trybie samego MMLW dostępny jest cały ranking wybranego typu.
+Karty hybrydy nie pokazują punktacji RRF; karty samego MMLW zachowują procent podobieństwa.
 
 ### Wyłączenie i awarie
 
@@ -207,7 +211,8 @@ Obejmują dane produkcyjne, puste dokumenty/zapytania, nieznane terminy,
 powtórzenia, negacje, nietypowy Unicode, niedodatnie wyniki, remisy i granicę
 100 kandydatów. Przebudowują również indeks produkcyjny i sprawdzają jego zgodność.
 Testy Chromium sprawdzają rzeczywiste zasoby leksykalne, interfejs, paginację,
-powrót do MMLW, filtr i dokładną frazę. W tych testach model ONNX jest zastąpiony
+powrót do MMLW, filtr (również rekordy spoza obu globalnych pierwszych setek),
+ukrycie punktacji hybrydy i dokładną frazę. W tych testach model ONNX jest zastąpiony
 stałym wektorem, aby CI nie pobierało 113 MB; nie sprawdzają jakości samego modelu.
 Workflow `Search conformance` uruchamia testy na każdym PR do `main`.
 
