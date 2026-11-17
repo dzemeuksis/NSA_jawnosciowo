@@ -1,3 +1,4 @@
+import { HYBRID_ENABLED } from './search-config.js';
 const DATA_URL = './data/data.json';
 const EMBEDDINGS_URL = './data/embeddings.json';
 const MODEL_ID = 'Infojura/mmlw-retrieval-e5-small-onnx';
@@ -7,6 +8,8 @@ const SEMANTIC_PAGE_SIZE = 25;
 const EMBEDDING_BATCH_SIZE = 16;
 
 const els = {
+  hybrid: document.querySelector('#hybrid-toggle'),
+  hybridControls: document.querySelector('#hybrid-controls'),
   exact: document.querySelector('#mode-exact'),
   semantic: document.querySelector('#mode-semantic'),
   input: document.querySelector('#search-input'),
@@ -35,6 +38,28 @@ let semanticResults = [];
 let semanticVisibleCount = 0;
 let loadMoreWrap = null;
 let loadMoreButton = null;
+let hybridPromise = null;
+let hybridFailed = false;
+let resultKind = 'cosine';
+let searchRevision = 0;
+
+async function getHybrid() {
+  if (!HYBRID_ENABLED || !els.hybrid.checked || hybridFailed) return null;
+  if (!hybridPromise) {
+    // A broken/missing lexical asset must never prevent MMLW search.
+    let timeout;
+    hybridPromise = Promise.race([
+      import('./hybrid-search.js').then(module => module.loadHybrid(dataMeta)),
+      new Promise((_, reject) => { timeout = setTimeout(() => reject(new Error('BM25 timeout')), 15000); }),
+    ]).finally(() => clearTimeout(timeout)).catch(error => {
+      console.warn('BM25 niedostępne; używam MMLW:', error);
+      hybridFailed = true;
+      els.status.textContent = 'BM25 niedostępne — wyszukiwanie MMLW działa';
+      return null;
+    });
+  }
+  return hybridPromise;
+}
 
 init();
 
@@ -53,6 +78,8 @@ async function init() {
   }
 
   createLoadMoreControls();
+  els.hybrid.checked = HYBRID_ENABLED && new URLSearchParams(location.search).get('hybrid') !== '0';
+  els.hybrid.addEventListener('change', runSearch);
 
   els.exact.addEventListener('click', () => setMode('exact'));
   els.semantic.addEventListener('click', async () => {
@@ -99,6 +126,8 @@ function populateTypeFilter() {
 function setMode(nextMode) {
   mode = nextMode;
   const exact = mode === 'exact';
+  searchRevision++;
+  els.hybridControls.hidden = exact || !HYBRID_ENABLED;
   if (exact) hideLoadMore();
   els.exact.classList.toggle('active', exact);
   els.semantic.classList.toggle('active', !exact);
@@ -136,6 +165,7 @@ function runExactSearch() {
 }
 
 async function runSemanticSearch() {
+  const revision = ++searchRevision;
   const query = els.input.value.trim();
   const type = els.type.value;
   if (!query) {
@@ -151,15 +181,32 @@ async function runSemanticSearch() {
   els.button.disabled = true;
   els.button.textContent = 'SZUKAM…';
   try {
+    const lexicalPromise = getHybrid();
     const out = await extractor(`query: ${query}`, { pooling: 'mean', normalize: true });
     const queryVector = Array.from(out.data);
     const scored = [];
     for (let i = 0; i < records.length; i++) {
-      if (type && records[i].typ !== type) continue;
-      scored.push({ record: records[i], score: dot(queryVector, embeddings[i]) });
+      scored.push({ record_index: i, record: records[i], score: dot(queryVector, embeddings[i]) });
     }
-    scored.sort((a,b) => b.score - a.score);
-    semanticResults = scored;
+    scored.sort((a,b) => b.score - a.score || a.record_index - b.record_index);
+    const hybrid = await lexicalPromise;
+    if (revision !== searchRevision || mode !== 'semantic') return;
+    let ranked = scored;
+    resultKind = 'cosine';
+    if (hybrid && els.hybrid.checked) {
+      try {
+        ranked = hybrid.fuse(scored, hybrid.rank(query)).map(hit => ({ ...hit, record: records[hit.record_index] }));
+        resultKind = 'rrf';
+      } catch (error) {
+        hybridFailed = true;
+        els.status.textContent = 'BM25 niedostępne — wyszukiwanie MMLW działa';
+        console.warn('Błąd BM25; używam MMLW:', error);
+      }
+    }
+    semanticResults = type ? ranked.filter(hit => hit.record.typ === type) : ranked;
+    els.hint.textContent = resultKind === 'rrf'
+      ? 'Ranking łączy dopasowanie znaczeniowe i słowne. Pokazujemy wyniki z puli kandydatów obu metod.'
+      : 'Wyniki są sortowane według podobieństwa znaczeniowego do wpisanego pytania lub opisu.';
     semanticVisibleCount = SEMANTIC_PAGE_SIZE;
     renderSemanticPage();
   } finally {
@@ -195,6 +242,7 @@ function renderSemanticPage() {
   renderResults(
     visible.map(x => x.record),
     {
+      scoreKind: resultKind,
       scores: new Map(
         visible.map(x => [x.record.id, x.score])
       )
@@ -359,7 +407,7 @@ function renderResults(items, options = {}) {
           <span class="type-chip">${escapeHtml(prettyType(record.typ))}</span>
           ${record.sygnatura ? `<span class="case-signature">${escapeHtml(record.sygnatura)}</span>` : ''}
         </div>
-        ${Number.isFinite(score) ? `<span class="similarity">podobieństwo: ${Math.round(score * 100)}%</span>` : ''}
+        ${Number.isFinite(score) ? `<span class="similarity">${options.scoreKind === 'rrf' ? `RRF: ${score.toFixed(4)}` : `podobieństwo: ${Math.round(score * 100)}%`}</span>` : ''}
       </div>
       <h2>${highlightText(record.teza, highlight)}</h2>
       <div class="field"><span class="field-label">Znaczenie projawnościowe</span><p>${highlightText(record.znaczenie_projawnosciowe, highlight)}</p></div>

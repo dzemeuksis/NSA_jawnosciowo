@@ -768,3 +768,7 @@ mark { background: var(--signal); color: inherit; padding: .04em .08em; }
     box-shadow: 7px 7px 0 var(--signal);
   }
 }
+
+#hybrid-controls { font-size: .84rem; line-height: 1.5; }
+#hybrid-controls input { accent-color: var(--signal); }
+#hybrid-controls:not([hidden]) + .mode-hint { grid-column: 1 / -1; }

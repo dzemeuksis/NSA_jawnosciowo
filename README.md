@@ -96,7 +96,7 @@ W katalogu znajduje się `prepare_site_data.py`. Łączy się on z MongoDB, pobi
 Instalacja:
 
 ```bash
-pip install pymongo python-dotenv sentence-transformers
+pip install pymongo python-dotenv sentence-transformers -r tools/requirements-search.txt
 ```
 
 Następnie:
@@ -134,3 +134,85 @@ Najprostszy wariant:
 - `data/data.json` — dane tez
 - `data/embeddings.json` — opcjonalny, ale zalecany gotowy indeks semantyczny
 - `prepare_site_data.py` — generator danych i embeddingów z MongoDB
+
+## Hybryda MMLW + BM25 (RRF)
+
+Tryb **Znaczeniowe** domyślnie łączy dotychczasowy MMLW z BM25.
+Model, rewizja ONNX, prefiksy E5 i istniejące embeddingi pozostają takie same.
+Wszystkie obliczenia przy wyszukiwaniu odbywają się w przeglądarce; GitHub Pages
+serwuje wyłącznie pliki statyczne.
+
+BM25Okapi używa `k1=1.5`, `b=0.75`, `epsilon=0.25`, łącznie z zastępowaniem
+ujemnego IDF przez `epsilon * średni IDF` z całego słownika, zgodnie z
+`rank_bm25==0.2.2`. Indeksowane są wyłącznie `teza + "\n" + znaczenie_projawnosciowe`.
+`podstawa_w_uzasadnieniu` pozostaje dostępna w dokładnej frazie, ale nie w BM25.
+Tokenizer odpowiada `re.findall(r"[^\W_]+", text.casefold())`, odrzuca tokeny
+krótsze niż dwa punkty kodowe i używa `Stemmer.polimorf()` PyStempel 2.0.0,
+z małymi literami i oryginalnym słowem przy braku rdzenia. Nie usuwa stop words.
+Statyczne tablice Unicode z Pythona 3.12 zachowują `casefold` i polskie oraz inne
+alfanumeryczne znaki także tam, gdzie JavaScript `toLowerCase()` lub `\w` dają inny wynik.
+
+Do RRF trafia pierwszych 100 wyników MMLW i do 100 **dodatnich** wyników BM25.
+Powtórzone słowa w zapytaniu liczą się wielokrotnie. Wynik RRF to suma
+`1 / (60 + pozycja)` z pozycjami liczonymi od 1. Remisy w BM25, MMLW i RRF
+rozstrzyga indeks rekordu w `data.records`, zgodnie z eksperymentem
+`porownaj_modele.py`; identyfikator rekordu nie jest kluczem rozstrzygania remisów.
+W hybrydzie paginacja obejmuje sumę obu pul (maksymalnie 200 rekordów), a filtr
+typu działa **po** globalnym RRF. W trybie samego MMLW dostępny jest cały ranking.
+Wartości RRF są oznaczone jako RRF, bez przeliczania ich na procent podobieństwa.
+
+### Wyłączenie i awarie
+
+- Odznacz **Łącz dopasowanie znaczeniowe i słowne** w trybie znaczeniowym.
+- Otwórz stronę z `?hybrid=0`, aby rozpocząć z samym MMLW.
+- Ustaw `HYBRID_ENABLED = false` w `search-config.js`, aby wyłączyć hybrydę dla wszystkich.
+
+Zasoby BM25 są pobierane dopiero przy pierwszym niepustym zapytaniu znaczeniowym.
+Brak pliku, uszkodzone reguły, inna wersja danych, inna treść/kolejność rekordów
+lub błąd modułu uruchamiają automatyczny powrót do MMLW. Ładowanie BM25 ma limit
+15 sekund. Po awarii MMLW działa do końca wizyty; odświeżenie strony ponawia próbę.
+Dokładna fraza nie wymaga modelu ani BM25.
+
+### Budowanie indeksu
+
+Wymagany Python 3.12 (przypięte tablice Unicode):
+
+```sh
+pip install -r tools/requirements-search.txt
+python tools/build_bm25.py
+```
+
+Tworzy `data/bm25.json` (ok. 1,6 MB) i `data/bm25-unicode.json` (ok. 28 KB),
+bez zmiany istniejących danych lub embeddingów. Generator z MongoDB
+`tools/prepare_site_data.py` również tworzy te pliki; oprócz dotychczasowych
+zależności wymaga `tools/requirements-search.txt`.
+Indeks zawiera IDF, długości dokumentów i listy wystąpień; przeglądarka nie
+stemmuje całego korpusu. Stemmer używany do zapytań ma lokalną tablicę reguł
+ok. 7,6 MB, ładowaną jednorazowo. Nie wymaga CDN ani backendu.
+
+### Testy zgodności
+
+```sh
+pip install -r tools/requirements-search.txt
+npm ci
+npm test
+npx playwright install chromium
+npm run test:browser
+```
+
+Testy tworzą niezależny oracle w Pythonie przy użyciu rzeczywistych
+PyStempel 2.0.0 i `rank_bm25==0.2.2`. Porównują tokeny, wszystkie punktacje
+BM25 (tolerancja `1e-12`), kolejność BM25 i RRF oraz punktację RRF.
+Obejmują dane produkcyjne, puste dokumenty/zapytania, nieznane terminy,
+powtórzenia, negacje, nietypowy Unicode, niedodatnie wyniki, remisy i granicę
+100 kandydatów. Przebudowują również indeks produkcyjny i sprawdzają jego zgodność.
+Testy Chromium sprawdzają rzeczywiste zasoby leksykalne, interfejs, paginację,
+powrót do MMLW, filtr i dokładną frazę. W tych testach model ONNX jest zastąpiony
+stałym wektorem, aby CI nie pobierało 113 MB; nie sprawdzają jakości samego modelu.
+Workflow `Search conformance` uruchamia testy na każdym PR do `main`.
+
+Stemmer jest kopią przypiętą do commitu
+[`1052235`](https://github.com/dzemeuksis/stempel-polimorf-js/tree/105223508979f294cfe28a273bf1cae0b541c108).
+Zachowano [NOTICE](vendor/stempel-polimorf-js/NOTICE), pełne teksty licencji
+Egothor, Apache-2.0 i BSD PoliMorf w [licenses/](vendor/stempel-polimorf-js/licenses/)
+oraz metadane pochodzenia. Repozytorium stemmera nie jest zmieniane.
